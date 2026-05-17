@@ -1,0 +1,1053 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NCSA Drill 2026 — CTF Challenges</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  /*
+   * HackTheBox color palette
+   * bg:       #141d2b  main background
+   * surface:  #1a2332  card / panel
+   * surface2: #111927  navbar / topbar
+   * border:   #2a3547  dividers
+   * accent:   #9fef00  HTB neon green
+   * text:     #c5d1eb  body copy
+   * muted2:   #7a8ba8  secondary text
+   * muted:    #4e5d6c  de-emphasised
+   */
+  :root {
+    --bg:          #141d2b;
+    --surface:     #1a2332;
+    --surface2:    #111927;
+    --border:      #2a3547;
+    --border2:     #374a63;
+    --accent:      #9fef00;
+    --accent-dim:  rgba(159,239,0,0.10);
+    --accent-glow: rgba(159,239,0,0.22);
+    --text:        #c5d1eb;
+    --text-hi:     #e2eaf8;
+    --muted2:      #7a8ba8;
+    --muted:       #4e5d6c;
+    --easy:        #9fef00;
+    --medium:      #ffaf75;
+    --hard:        #ff3e3e;
+    /* category colors */
+    --c-web:       #9fef00;
+    --c-for:       #a66cff;
+    --c-pwn:       #ff6e27;
+    --c-cry:       #ffd166;
+    --c-rev:       #ef4b9e;
+    --c-inc:       #00c9b1;
+    --c-ics:       #ff8c42;
+    --c-thr:       #7ecf2b;
+    --c-apt:       #ff3e3e;
+    --c-osi:       #49b9ff;
+  }
+
+  *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+  html { scroll-behavior:smooth; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Inter', system-ui, sans-serif;
+    font-size: 14px;
+    line-height: 1.6;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* HTB subtle dot-grid overlay */
+  body::before {
+    content:'';
+    position:fixed; inset:0;
+    background-image: radial-gradient(circle, rgba(159,239,0,0.055) 1px, transparent 1px);
+    background-size: 28px 28px;
+    pointer-events:none;
+    z-index:0;
+  }
+
+  a { color:var(--accent); text-decoration:none; }
+  a:hover { text-decoration:underline; }
+  strong { color:var(--text-hi); font-weight:600; }
+  em { color:var(--muted2); font-style:italic; }
+
+  code {
+    font-family:'IBM Plex Mono',monospace;
+    font-size:12px;
+    background:rgba(159,239,0,0.08);
+    color:var(--accent);
+    padding:1px 6px;
+    border-radius:3px;
+  }
+
+  /* ---- TOPBAR ---- */
+  .topbar {
+    position:sticky; top:0; z-index:300;
+    background:var(--surface2);
+    border-bottom:1px solid var(--border);
+    padding:0 28px; height:54px;
+    display:flex; align-items:center; gap:16px;
+  }
+
+  .t-logo {
+    display:flex; align-items:center; gap:10px;
+    font-family:'IBM Plex Mono',monospace;
+    font-size:13px; font-weight:600;
+    color:var(--accent); letter-spacing:.4px;
+    text-decoration:none; white-space:nowrap;
+  }
+
+  .t-logo .hex {
+    width:24px; height:24px;
+    background:var(--accent);
+    clip-path:polygon(50% 0%,100% 25%,100% 75%,50% 100%,0% 75%,0% 25%);
+    display:inline-block; flex-shrink:0;
+  }
+
+  .t-sep { width:1px; height:22px; background:var(--border2); }
+
+  .t-crumb {
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11px; color:var(--muted2);
+  }
+
+  .t-right {
+    margin-left:auto;
+    display:flex; align-items:center; gap:7px;
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11px; color:var(--muted);
+  }
+
+  .dot-live {
+    width:7px; height:7px; border-radius:50%;
+    background:var(--accent);
+    animation:livepulse 2s ease-in-out infinite;
+  }
+
+  @keyframes livepulse {
+    0%,100% { opacity:1; box-shadow:0 0 0 0 var(--accent-glow); }
+    50%      { opacity:.55; }
+  }
+
+  /* ---- HERO ---- */
+  .hero {
+    position:relative; z-index:10;
+    padding:72px 32px 52px;
+    text-align:center;
+    border-bottom:1px solid var(--border);
+    overflow:hidden;
+  }
+
+  .hero::before {
+    content:'';
+    position:absolute; top:-80px; left:50%; transform:translateX(-50%);
+    width:700px; height:280px;
+    background:radial-gradient(ellipse, rgba(159,239,0,0.10) 0%, transparent 68%);
+    pointer-events:none;
+  }
+
+  .hero-badge {
+    display:inline-flex; align-items:center; gap:8px;
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11px; color:var(--accent);
+    letter-spacing:2.5px; text-transform:uppercase;
+    background:var(--accent-dim);
+    border:1px solid rgba(159,239,0,0.22);
+    border-radius:3px; padding:5px 16px;
+    margin-bottom:30px;
+  }
+
+  .hero-badge .d { width:6px; height:6px; border-radius:50%; background:var(--accent); animation:livepulse 1.6s infinite; }
+
+  .hero h1 {
+    font-size:clamp(2.6rem, 5.5vw, 4.4rem);
+    font-weight:700; letter-spacing:-1.5px;
+    color:var(--text-hi); line-height:1.05;
+    margin-bottom:14px;
+  }
+
+  .hero h1 .hl { color:var(--accent); text-shadow:0 0 40px rgba(159,239,0,0.45); }
+
+  .hero-sub { font-size:15px; color:var(--muted2); margin-bottom:44px; }
+
+  .stats-row { display:flex; justify-content:center; gap:10px; flex-wrap:wrap; }
+
+  .stat-pill {
+    display:flex; align-items:center; gap:12px;
+    background:var(--surface); border:1px solid var(--border);
+    border-radius:6px; padding:12px 24px;
+    transition:border-color .2s;
+  }
+  .stat-pill:hover { border-color:var(--border2); }
+  .stat-pill .num { font-family:'IBM Plex Mono',monospace; font-size:1.7rem; font-weight:600; color:var(--accent); line-height:1; }
+  .stat-pill .lbl { font-size:11px; color:var(--muted2); text-transform:uppercase; letter-spacing:1px; }
+
+  /* ---- FILTER BAR ---- */
+  .filter-bar {
+    position:sticky; top:54px; z-index:200;
+    background:var(--surface2);
+    border-bottom:1px solid var(--border);
+    padding:0 28px;
+    display:flex; gap:0;
+    overflow-x:auto; scrollbar-width:none;
+  }
+  .filter-bar::-webkit-scrollbar { display:none; }
+
+  .fbtn {
+    font-family:'IBM Plex Mono',monospace;
+    font-size:11px; letter-spacing:.7px; text-transform:uppercase;
+    padding:15px 16px;
+    border:none; border-bottom:2px solid transparent; margin-bottom:-1px;
+    background:transparent; color:var(--muted2);
+    cursor:pointer; white-space:nowrap;
+    transition:color .15s, border-color .15s;
+  }
+  .fbtn:hover { color:var(--text); }
+  .fbtn.active { color:var(--accent); border-bottom-color:var(--accent); }
+
+  /* ---- TOOLBAR ---- */
+  .toolbar {
+    position:relative; z-index:10;
+    max-width:1400px; margin:0 auto;
+    padding:20px 28px 6px;
+    display:flex; align-items:center; gap:14px;
+  }
+
+  .sw { position:relative; flex:1; max-width:420px; }
+  .sw input {
+    width:100%;
+    background:var(--surface); border:1px solid var(--border);
+    border-radius:6px; color:var(--text);
+    font-family:'IBM Plex Mono',monospace; font-size:12px;
+    padding:9px 14px 9px 36px; outline:none;
+    transition:border-color .18s, box-shadow .18s;
+  }
+  .sw input::placeholder { color:var(--muted); }
+  .sw input:focus { border-color:var(--accent); box-shadow:0 0 0 3px var(--accent-dim); }
+  .sw .si { position:absolute; left:12px; top:50%; transform:translateY(-50%); color:var(--muted); font-size:14px; pointer-events:none; }
+
+  .rc { font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--muted); white-space:nowrap; }
+
+  /* ---- MAIN ---- */
+  .main {
+    position:relative; z-index:10;
+    max-width:1400px; margin:0 auto;
+    padding:22px 28px 80px;
+  }
+
+  /* ---- CATEGORY SECTION ---- */
+  .cat-sec { margin-bottom:52px; }
+
+  .cat-hdr {
+    display:flex; align-items:center; gap:12px;
+    margin-bottom:16px; padding-bottom:14px;
+    border-bottom:1px solid var(--border);
+  }
+
+  .cswatch { width:10px; height:10px; border-radius:50%; flex-shrink:0; }
+
+  .cat-hdr h2 { font-size:15px; font-weight:600; color:var(--text-hi); }
+
+  .cat-hdr .cbadge {
+    font-family:'IBM Plex Mono',monospace; font-size:10px; color:var(--muted2);
+    background:var(--surface); border:1px solid var(--border);
+    border-radius:20px; padding:2px 10px; margin-left:auto; white-space:nowrap;
+  }
+
+  /* ---- SCENARIO BOX ---- */
+  .scenario {
+    background:var(--surface); border:1px solid var(--border);
+    border-left-width:3px; border-radius:0 6px 6px 0;
+    padding:16px 20px; margin-bottom:18px;
+    font-size:13px; line-height:1.75; color:var(--muted2);
+  }
+  .scenario h4 {
+    font-family:'IBM Plex Mono',monospace; font-size:9px;
+    letter-spacing:2px; color:var(--muted); text-transform:uppercase;
+    margin-bottom:8px;
+  }
+  .scenario p+p { margin-top:7px; }
+  .scenario .al { font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--accent); word-break:break-all; display:inline-block; margin-top:5px; }
+  .scenario .pw {
+    display:inline-flex; align-items:center; gap:8px; margin-top:10px;
+    background:rgba(159,239,0,0.06); border:1px solid rgba(159,239,0,0.18);
+    border-radius:4px; padding:6px 12px;
+    font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--accent);
+    word-break:break-all;
+  }
+
+  /* ---- GRID ---- */
+  .grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(295px,1fr)); gap:12px; }
+
+  /* ---- CARD ---- */
+  .card {
+    position:relative; background:var(--surface);
+    border:1px solid var(--border); border-radius:8px;
+    overflow:hidden; cursor:default;
+    transition:border-color .18s, transform .18s, box-shadow .18s;
+  }
+  .card:hover { transform:translateY(-3px); box-shadow:0 10px 36px rgba(0,0,0,0.45); }
+
+  .cstripe { position:absolute; left:0; top:0; bottom:0; width:3px; }
+  .cbody { padding:16px 18px 14px 20px; }
+
+  .ctop { display:flex; align-items:flex-start; justify-content:space-between; gap:10px; margin-bottom:6px; }
+  .ctitle { font-size:14px; font-weight:600; color:var(--text-hi); line-height:1.3; }
+
+  .cpts {
+    font-family:'IBM Plex Mono',monospace; font-size:14px; font-weight:600;
+    white-space:nowrap; flex-shrink:0; padding:2px 9px; border-radius:4px;
+    background:var(--accent-dim); color:var(--accent); border:1px solid rgba(159,239,0,0.18);
+  }
+
+  .ctag {
+    display:inline-block; font-family:'IBM Plex Mono',monospace;
+    font-size:9px; letter-spacing:1.2px; text-transform:uppercase;
+    padding:2px 8px; border-radius:2px; border:1px solid;
+    opacity:.72; margin-bottom:11px;
+  }
+
+  .cdesc { font-size:13px; line-height:1.7; color:var(--muted2); margin-bottom:13px; }
+  .cdesc a { color:var(--accent); word-break:break-all; }
+
+  .cfoot {
+    display:flex; align-items:center; justify-content:space-between; gap:8px;
+    padding-top:11px; border-top:1px solid var(--border);
+  }
+
+  .cflag { font-family:'IBM Plex Mono',monospace; font-size:10px; color:var(--muted); }
+  .cflag span { color:rgba(159,239,0,.75); }
+
+  .diff {
+    font-family:'IBM Plex Mono',monospace; font-size:10px; font-weight:500;
+    letter-spacing:.8px; text-transform:uppercase;
+    padding:3px 10px; border-radius:20px; border:1px solid; white-space:nowrap;
+  }
+  .easy   { color:var(--easy);   border-color:rgba(159,239,0,.3);   background:rgba(159,239,0,.07); }
+  .medium { color:var(--medium); border-color:rgba(255,175,117,.3); background:rgba(255,175,117,.07); }
+  .hard   { color:var(--hard);   border-color:rgba(255,62,62,.3);   background:rgba(255,62,62,.07); }
+
+  /* per-category card theming */
+  .w  .cstripe{background:var(--c-web);}  .w  .ctag{color:var(--c-web);border-color:var(--c-web);}  .w:hover{border-color:rgba(159,239,0,.5);}
+  .f  .cstripe{background:var(--c-for);}  .f  .ctag{color:var(--c-for);border-color:var(--c-for);}  .f:hover{border-color:rgba(166,108,255,.5);}
+  .p  .cstripe{background:var(--c-pwn);}  .p  .ctag{color:var(--c-pwn);border-color:var(--c-pwn);}  .p:hover{border-color:rgba(255,110,39,.5);}
+  .cr .cstripe{background:var(--c-cry);}  .cr .ctag{color:var(--c-cry);border-color:var(--c-cry);}  .cr:hover{border-color:rgba(255,209,102,.5);}
+  .r  .cstripe{background:var(--c-rev);}  .r  .ctag{color:var(--c-rev);border-color:var(--c-rev);}  .r:hover{border-color:rgba(239,75,158,.5);}
+  .i  .cstripe{background:var(--c-inc);}  .i  .ctag{color:var(--c-inc);border-color:var(--c-inc);}  .i:hover{border-color:rgba(0,201,177,.5);}
+  .ic .cstripe{background:var(--c-ics);}  .ic .ctag{color:var(--c-ics);border-color:var(--c-ics);}  .ic:hover{border-color:rgba(255,140,66,.5);}
+  .t  .cstripe{background:var(--c-thr);}  .t  .ctag{color:var(--c-thr);border-color:var(--c-thr);}  .t:hover{border-color:rgba(126,207,43,.5);}
+  .a  .cstripe{background:var(--c-apt);}  .a  .ctag{color:var(--c-apt);border-color:var(--c-apt);}  .a:hover{border-color:rgba(255,62,62,.5);}
+  .o  .cstripe{background:var(--c-osi);}  .o  .ctag{color:var(--c-osi);border-color:var(--c-osi);}  .o:hover{border-color:rgba(73,185,255,.5);}
+
+  /* ---- UTIL ---- */
+  .card.hidden { display:none; }
+  .cat-sec.hidden { display:none; }
+
+  .no-res {
+    display:none; text-align:center; padding:80px 20px; position:relative; z-index:10;
+    font-family:'IBM Plex Mono',monospace; font-size:13px; color:var(--muted); letter-spacing:1px;
+  }
+
+  /* ---- FOOTER ---- */
+  footer {
+    position:relative; z-index:10;
+    text-align:center; padding:26px 20px;
+    border-top:1px solid var(--border);
+    font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--muted); letter-spacing:1px;
+  }
+  footer a { color:var(--accent); }
+  footer p+p { margin-top:5px; opacity:.5; }
+
+  /* ---- RESPONSIVE ---- */
+  @media(max-width:640px){
+    .hero{padding:48px 20px 36px;}
+    .main,.toolbar{padding-left:16px;padding-right:16px;}
+    .filter-bar{padding:0 12px;}
+    .topbar{padding:0 16px;}
+    .grid{grid-template-columns:1fr;}
+    .t-crumb{display:none;}
+    .stats-row{gap:8px;}
+    .stat-pill{padding:10px 14px;}
+  }
+</style>
+</head>
+<body>
+
+<!-- TOPBAR -->
+<div class="topbar">
+  <a class="t-logo" href="#">
+    <span class="hex"></span>NCSA Drill 2026
+  </a>
+  <div class="t-sep"></div>
+  <span class="t-crumb">CTF Challenges Archive</span>
+  <div class="t-right"><span class="dot-live"></span>40 CHALLENGES</div>
+</div>
+
+<!-- HERO -->
+<div class="hero">
+  <div class="hero-badge"><span class="d"></span>National Cyber Security Agency &nbsp;·&nbsp; Bangladesh</div>
+  <h1>NCSA Drill <span class="hl">2026</span></h1>
+  <p class="hero-sub">Cybersecurity Drill — CTF Challenges Archive &amp; Writeup Reference</p>
+  <div class="stats-row">
+    <div class="stat-pill"><span class="num">10</span><span class="lbl">Categories</span></div>
+    <div class="stat-pill"><span class="num">40</span><span class="lbl">Challenges</span></div>
+    <div class="stat-pill"><span class="num">3650</span><span class="lbl">Total Points</span></div>
+    <div class="stat-pill"><span class="num">2026</span><span class="lbl">Edition</span></div>
+  </div>
+</div>
+
+<!-- FILTER BAR -->
+<div class="filter-bar">
+  <button class="fbtn active" data-cat="all">All</button>
+  <button class="fbtn" data-cat="Web">Web</button>
+  <button class="fbtn" data-cat="Digital Forensics">Forensics</button>
+  <button class="fbtn" data-cat="PWN">PWN</button>
+  <button class="fbtn" data-cat="Crypto">Crypto</button>
+  <button class="fbtn" data-cat="Reverse Engineering">Reverse</button>
+  <button class="fbtn" data-cat="Incident Handling">Incident</button>
+  <button class="fbtn" data-cat="ICS">ICS</button>
+  <button class="fbtn" data-cat="Threat Intelligence">Threat Intel</button>
+  <button class="fbtn" data-cat="APT">APT</button>
+  <button class="fbtn" data-cat="OSINT">OSINT</button>
+</div>
+
+<!-- TOOLBAR -->
+<div class="toolbar">
+  <div class="sw">
+    <span class="si">⌕</span>
+    <input type="text" id="srch" placeholder="Search challenges…" autocomplete="off" spellcheck="false">
+  </div>
+  <span class="rc" id="rc">40 challenges</span>
+</div>
+
+<div class="no-res" id="noRes">No matching challenges found.</div>
+
+<!-- MAIN -->
+<main class="main">
+
+<!-- ══════════════ WEB ══════════════ -->
+<section class="cat-sec" data-cat="Web">
+  <div class="cat-hdr">
+    <span class="cswatch" style="background:var(--c-web)"></span>
+    <h2>Web Exploitation</h2>
+    <span class="cbadge">5 challenges · 800 pts</span>
+  </div>
+  <div class="grid">
+
+    <div class="card w" data-cat="Web" data-kw="counter lfi file read flag app vulnerability">
+      <div class="cstripe"></div><div class="cbody">
+        <div class="ctop"><div class="ctitle">Challenge 1 — Counter App LFI</div><div class="cpts">100</div></div>
+        <span class="ctag">Web</span>
+        <div class="cdesc">A developer built a simple counter app with a vulnerability in its behaviour.<br><br><strong>Goal:</strong> Read <code>/home/flag.txt</code><br>🌐 <a href="http://114.130.119.18:10001/" target="_blank">http://114.130.119.18:10001/</a></div>
+        <div class="cfoot"><div class="cflag">Flag: <span>NCSA2026{flag}</span></div><span class="diff easy">Easy</span></div>
+      </div>
+    </div>
+
+    <div class="card w" data-cat="Web" data-kw="gradio rce vulnerability unpatched file read">
+      <div class="cstripe"></div><div class="cbody">
+        <div class="ctop"><div class="ctitle">Challenge 2 — Gradio RCE</div><div class="cpts">100</div></div>
+        <span class="ctag">Web</span>
+        <div class="cdesc">A <strong>Gradio</strong> web app with an unpatched vulnerability reported by a researcher.<br><br><strong>Goal:</strong> Read <code>/home/flag.txt</code><br>🌐 <a href="http://114.130.119.18:10002" target="_blank">http://114.130.119.18:10002</a></div>
+        <div class="cfoot"><div class="cflag">Flag: <span>NCSA2026{flag}</span></div><span class="diff easy">Easy</span></div>
+      </div>
+    </div>
+
+    <div class="card w" data-cat="Web" data-kw="react intern template default server ssti rce">
+      <div class="cstripe"></div><div class="cbody">
+        <div class="ctop"><div class="ctitle">Challenge 3 — Intern's Template</div><div class="cpts">100</div></div>
+        <span class="ctag">Web</span>
+        <div class="cdesc">An intern deployed a <strong>React movie ticket app</strong> on a default server template and left it open over the weekend.<br><br><strong>Goal:</strong> Read <code>/home/flag.txt</code><br>🌐 <a href="http://114.130.119.18:10003" target="_blank">http://114.130.119.18:10003</a></div>
+        <div class="cfoot"><div class="cflag">Flag: <span>NCSA2026{flag}</span></div><span class="diff medium">Medium</span></div>
+      </div>
+    </div>
+
+    <div class="card w" data-cat="Web" data-kw="ecommerce staging environment vulnerability backend">
+      <div class="cstripe"></div><div class="cbody">
+        <div class="ctop"><div class="ctitle">Challenge 4 — E-Commerce Staging</div><div class="cpts">200</div></div>
+        <span class="ctag">Web</span>
+        <div class="cdesc">An e-commerce platform deployed on a staging server with a critical vulnerability in the app environment.<br><br><strong>Goal:</strong> Read <code>/home/flag.txt</code><br>🌐 <a href="http://114.130.119.18:10004" target="_blank">http://114.130.119.18:10004</a></div>
+        <div class="cfoot"><div class="cflag">Flag: <span>NCSA2026{flag}</span></div><span class="diff hard">Hard</span></div>
+      </div>
+    </div>
+
+    <div class="card w" data-cat="Web" data-kw="bug bounty open challenge recruitment security">
+      <div class="cstripe"></div><div class="cbody">
+        <div class="ctop"><div class="ctitle">Challenge 5 — Bug Hunter Gauntlet</div><div class="cpts">300</div></div>
+        <span class="ctag">Web</span>
+        <div class="cdesc">A cybersecurity org's open challenge to recruit bug hunters — anyone can participate.<br><br><strong>Goal:</strong> Solve the challenge and retrieve the flag.<br>🌐 <a href="http://114.130.119.18:10006" target="_blank">http://114.130.119.18:10006</a></div>
+        <div class="cfoot"><div class="cflag">Flag: <span>NCSA2026{flag}</span></div><span class="diff hard">Hard</span></div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ══════════════ DIGITAL FORENSICS ══════════════ -->
+<section class="cat-sec" data-cat="Digital Forensics">
+  <div class="cat-hdr">
+    <span class="cswatch" style="background:var(--c-for)"></span>
+    <h2>Digital Forensics</h2>
+    <span class="cbadge">8 challenges · 950 pts</span>
+  </div>
+  <div class="scenario" style="border-left-color:var(--c-for)">
+    <h4>📁 Scenario</h4>
+    <p><strong>Barney Gabriella</strong> abused her data-access privileges to exfiltrate confidential information via a hidden <strong>Linux VM</strong> on her corporate laptop. Her laptop was seized; the VM was recovered for forensic examination.</p>
+    <p><strong>⚠ Same artifact for all Forensics questions.</strong></p>
+    <p>Artifact: <a class="al" href="https://drive.egovcloud.gov.bd/index.php/s/zC6XzRu8tBruX5h/download" target="_blank">https://drive.egovcloud.gov.bd/index.php/s/zC6XzRu8tBruX5h/download</a></p>
+    <div class="pw">🔑 Password: 70E6EFDAE0EF9B9BE16AB7E16A204A6E50B9A3EF</div>
+  </div>
+  <div class="grid">
+
+    <div class="card f" data-cat="Digital Forensics" data-kw="os installation date timezone bangladesh standard time">
+      <div class="cstripe"></div><div class="cbody">
+        <div class="ctop"><div class="ctitle">Forensics 1 — OS Install Date</div><div class="cpts">50</div></div>
+        <span class="ctag">Forensics</span>
+        <div class="cdesc">Find the OS installation date in <strong>Bangladesh Standard Time (BST)</strong>.</div>
+        <div class="cfoot"><div class="cflag">Flag: <span>NCSA2026{dd.mm.yyyy}</span></div><span class="diff easy">Easy</span></div>
+      </div>
+    </div>
+
+    <div class="card f" data-cat="Digital Forensics" data-kw="hostname pc computer machine name">
+      <div class="cstripe"></div><div class="cbody">
+        <div class="ctop"><div class="ctitle">Forensics 2 — Hostname</div><div class="cpts">100</div></div>
+        <span class="ctag">Forensics</span>
+        <div class="cdesc">Find the <strong>hostname</strong> of the seized virtual machine.</div>
+        <div class="cfoot"><div class="cflag">Flag: <span>NCSA2026{hostname}</span></div><span class="diff easy">Easy</span></div>
+      </div>
+    </div>
+
+    <div class="card f" data-cat="Digital Forensics" data-kw="passport number barney gabriella employee identity">
+      <div class="cstripe"></div><div class="cbody">
+        <div class="ctop"><div class="ctitle">Forensics 3 — Passport Number</div><div class="cpts">100</div></div>
+        <span class="ctag">Forensics</span>
+        <div class="cdesc">Find <strong>Barney Gabriella's passport number</strong> from the artifact.</div>
+        <div class="cfoot"><div class="cflag">Flag: <span>NCSA2026{Passport Number}</span></div><span class="diff easy">Easy</span></div>
+      </div>
+    </div>
+
+    <div class="card f" data-cat="Digital Forensics" data-kw="google maps pinned location coordinates geolocation">
+      <div class="cstripe"></div><div class="cbody">
+        <div class="ctop"><div class="ctitle">Forensics 4 — Pinned Map Location</div><div class="cpts">150</div></div>
+        <span class="ctag">Forensics</span>
+        <div class="cdesc">Find the <strong>pinned Google Maps location</strong> stored in the VM artifact.</div>
+        <div class="cfoot"><div class="cflag">Flag: <span>NCSA2026{LocationName}</span></div><span class="diff medium">Medium</span></div>
+      </div>
+    </div>
+
+    <div class="card f" data-cat="Digital Forensics" data-kw="cryptocurrency wallet address bitcoin steganography hidden">
+      <div class="cstripe"></div><div class="cbody">
+        <div class="ctop"><div class="ctitle">Forensics 5 — Crypto Wallet</div><div class="cpts">150</div></div>
+        <span class="ctag">Forensics</span>
+        <div class="cdesc">Find Barney's <strong>cryptocurrency wallet address</strong>.<br><em>💡 Hint: A colleague overheard her discussing her passport number with a Maps location — these may hide clues.</em></div>
+        <div class="cfoot"><div class="cflag">Flag: <span>NCSA2026{Wallet Address}</span></div><span class="diff medium">Medium</span></div>
+      </div>
+    </div>
+
+    <div class="card f" data-cat="Digital Forensics" data-kw="document id top secret classified file">
+      <div class="cstripe"></div><div class="cbody">
+        <div class="ctop"><div class="ctitle">Forensics 6 — Document ID</div><div class="cpts">150</div></div>
+        <span class="ctag">Forensics</span>
+        <div class="cdesc">Find the <strong>Document ID</strong> of the "Top Secret" document recovered from the VM.</div>
+        <div class="cfoot"><div class="cflag">Flag: <span>NCSA2026{Document ID}</span></div><span class="diff medium">Medium</span></div>
+      </div>
+    </div>
+
+    <div class="card f" data-cat="Digital Forensics" data-kw="md5 hash top secret document integrity">
+      <div class="cstripe"></div><div class="cbody">
+        <div class="ctop"><div class="ctitle">Forensics 7 — MD5 Hash</div><div class="cpts">200</div></div>
+        <span class="ctag">Forensics</span>
+        <div class="cdesc">Provide the <strong>MD5 hash</strong> of the "Top Secret" document.</div>
+        <div class="cfoot"><div class="cflag">Flag: <span>NCSA2026{MD5 Hash}</span></div><span class="diff hard">Hard</span></div>
+      </div>
+    </div>
+
+    <div class="card f" data-cat="Digital Forensics" data-kw="last ip address assigned virtual machine network dhcp">
+      <div class="cstripe"></div><div class="cbody">
+        <div class="ctop"><div class="ctitle">Forensics 8 — Last IP Address</div><div class="cpts">200</div></div>
+        <span class="ctag">Forensics</span>
+        <div class="cdesc">Identify the <strong>last IP address</strong> assigned to the virtual machine.</div>
+        <div class="cfoot"><div class="cflag">Flag: <span>NCSA2026{IP Address}</span></div><span class="diff hard">Hard</span></div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ══════════════ PWN ══════════════ -->
+<section class="cat-sec" data-cat="PWN">
+  <div class="cat-hdr">
+    <span class="cswatch" style="background:var(--c-pwn)"></span>
+    <h2>PWN</h2>
+    <span class="cbadge">3 challenges · 1000 pts</span>
+  </div>
+  <div class="scenario" style="border-left-color:var(--c-pwn)">
+    <h4>💻 Scenario</h4>
+    <p>Run the provided <strong>VirtualBox artifact</strong> and retrieve all flags through enumeration and privilege escalation. All questions share the same VM.</p>
+    <p><strong>Network:</strong> host-only → <code>192.168.110.x</code> &nbsp;/&nbsp; bridged → <code>192.168.90.x</code></p>
+    <p>Artifact: <a class="al" href="https://drive.egovcloud.gov.bd/index.php/s/khHxGubbnozdrnR" target="_blank">https://drive.egovcloud.gov.bd/index.php/s/khHxGubbnozdrnR</a></p>
+    <div class="pw">🔑 7-zip Password: 64213229ebc60fa968418701266a8f9c</div>
+  </div>
+  <div class="grid">
+
+    <div class="card p" data-cat="PWN" data-kw="user flag 1 enumeration initial access linux foothold">
+      <div class="cstripe"></div><div class="cbody">
+        <div class="ctop"><div class="ctitle">Question 1 — User Flag 1</div><div class="cpts">350</div></div>
+        <span class="ctag">PWN</span>
+        <div class="cdesc">Enumerate the target, gain initial access, and <strong>submit User Flag 1</strong>.</div>
+        <div class="cfoot"><div class="cflag">Flag: <span>NCSA2026{flag}</span></div><span class="diff hard">Hard</span></div>
+      </div>
+    </div>
+
+    <div class="card p" data-cat="PWN" data-kw="user flag 2 lateral movement pivot second user">
+      <div class="cstripe"></div><div class="cbody">
+        <div class="ctop"><div class="ctitle">Question 2 — User Flag 2</div><div class="cpts">350</div></div>
+        <span class="ctag">PWN</span>
+        <div class="cdesc">Pivot and find lateral movement opportunities — <strong>submit User Flag 2</strong>.</div>
+        <div class="cfoot"><div class="cflag">Flag: <span>NCSA2026{flag}</span></div><span class="diff hard">Hard</span></div>
+      </div>
+    </div>
+
+    <div class="card p" data-cat="PWN" data-kw="root admin flag privilege escalation sudo suid">
+      <div class="cstripe"></div><div class="cbody">
+        <div class="ctop"><div class="ctitle">Question 3 — Admin / Root Flag</div><div class="cpts">300</div></div>
+        <span class="ctag">PWN</span>
+        <div class="cdesc">Escalate privileges to <strong>root/admin</strong> and submit the Admin Flag.</div>
+        <div class="cfoot"><div class="cflag">Flag: <span>NCSA2026{flag}</span></div><span class="diff hard">Hard</span></div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ══════════════ CRYPTO ══════════════ -->
+<section class="cat-sec" data-cat="Crypto">
+  <div class="cat-hdr">
+    <span class="cswatch" style="background:var(--c-cry)"></span>
+    <h2>Cryptography</h2>
+    <span class="cbadge">1 challenge · 150 pts</span>
+  </div>
+  <div class="grid">
+
+    <div class="card cr" data-cat="Crypto" data-kw="netcat nc socket service remote crypto">
+      <div class="cstripe"></div><div class="cbody">
+        <div class="ctop"><div class="ctitle">Netcat Crypto Challenge</div><div class="cpts">150</div></div>
+        <span class="ctag">Crypto</span>
+        <div class="cdesc">Connect to the remote service and solve the cryptographic challenge.<br><br><code>nc 114.130.119.18 10010</code></div>
+        <div class="cfoot"><div class="cflag">Flag: <span>NCSA2026{flag}</span></div><span class="diff medium">Medium</span></div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ══════════════ REVERSE ENGINEERING ══════════════ -->
+<section class="cat-sec" data-cat="Reverse Engineering">
+  <div class="cat-hdr">
+    <span class="cswatch" style="background:var(--c-rev)"></span>
+    <h2>Reverse Engineering</h2>
+    <span class="cbadge">3 challenges · 450 pts</span>
+  </div>
+  <div class="grid">
+
+    <div class="card r" data-cat="Reverse Engineering" data-kw="bank heist 1 binary receipt 36 character uuid crackme">
+      <div class="cstripe"></div><div class="cbody">
+        <div class="ctop"><div class="ctitle">Bank Heist — Part 1</div><div class="cpts">150</div></div>
+        <span class="ctag">Reverse</span>
+        <div class="cdesc">Reverse the binary and find the correct <strong>36-character Receipt ID</strong>.<br>📦 <a href="https://drive.egovcloud.gov.bd/index.php/s/rLeu1yTG3ztEHF6" target="_blank">Artifact Download</a></div>
+        <div class="cfoot"><div class="cflag">Flag: <span>NCSA2026{flag}</span></div><span class="diff medium">Medium</span></div>
+      </div>
+    </div>
+
+    <div class="card r" data-cat="Reverse Engineering" data-kw="bank heist 2 binary flag keygen crackme">
+      <div class="cstripe"></div><div class="cbody">
+        <div class="ctop"><div class="ctitle">Bank Heist — Part 2</div><div class="cpts">150</div></div>
+        <span class="ctag">Reverse</span>
+        <div class="cdesc">Continue reversing to extract the <strong>bank_heist flag</strong>.<br>📦 <a href="https://drive.egovcloud.gov.bd/index.php/s/rLeu1yTG3ztEHF6" target="_blank">Artifact Download</a></div>
+        <div class="cfoot"><div class="cflag">Flag: <span>NCSA2026{flag}</span></div><span class="diff medium">Medium</span></div>
+      </div>
+    </div>
+
+    <div class="card r" data-cat="Reverse Engineering" data-kw="auth system linux elf binary authentication password crackme reverse">
+      <div class="cstripe"></div><div class="cbody">
+        <div class="ctop"><div class="ctitle">Auth System Crackme</div><div class="cpts">150</div></div>
+        <span class="ctag">Reverse</span>
+        <div class="cdesc">Reverse the Linux ELF binary <code>auth_system</code>. Find the correct password for <strong>Successful Authentication</strong>.<br>📦 <a href="https://drive.egovcloud.gov.bd/index.php/s/4XgCm6ZhIbB6vyg" target="_blank">Artifact Download</a></div>
+        <div class="cfoot"><div class="cflag">Flag: <span>NCSA2026{flag}</span></div><span class="diff medium">Medium</span></div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ══════════════ INCIDENT HANDLING ══════════════ -->
+<section class="cat-sec" data-cat="Incident Handling">
+  <div class="cat-hdr">
+    <span class="cswatch" style="background:var(--c-inc)"></span>
+    <h2>Incident Handling</h2>
+    <span class="cbadge">8 challenges · 800 pts</span>
+  </div>
+  <div class="grid">
+
+    <div class="card i" data-cat="Incident Handling" data-kw="ip 404 response highest web log scanning recon">
+      <div class="cstripe"></div><div class="cbody">
+        <div class="ctop"><div class="ctitle">IH 1 — Scanning IP</div><div class="cpts">100</div></div>
+        <span class="ctag">Incident</span>
+        <div class="cdesc">Which <strong>IP address</strong> generated the highest number of <strong>404 responses</strong>?</div>
+        <div class="cfoot"><div class="cflag">Flag: <span>NCSA2026{10.10.10.10}</span></div><span class="diff easy">Easy</span></div>
+      </div>
+    </div>
+
+    <div class="card i" data-cat="Incident Handling" data-kw="user agent failed endpoint probing scanner web log">
+      <div class="cstripe"></div><div class="cbody">
+        <div class="ctop"><div class="ctitle">IH 2 — Malicious User-Agent</div><div class="cpts">100</div></div>
+        <span class="ctag">Incident</span>
+        <div class="cdesc">Which <strong>user-agent</strong> was most frequently associated with failed endpoint probing?</div>
+        <div class="cfoot"><div class="cflag">Flag: <span>NCSA2026{Mozilla/5.0}</span></div><span class="diff easy">Easy</span></div>
+      </div>
+    </div>
+
+    <div class="card i" data-cat="Incident Handling" data-kw="remote access file webshell backdoor upload initial access">
+      <div class="cstripe"></div><div class="cbody">
+        <div class="ctop"><div class="ctitle">IH 3 — Remote Access File</div><div class="cpts">100</div></div>
+        <span class="ctag">Incident</span>
+        <div class="cdesc">Which <strong>file</strong> was used to establish remote access on the compromised system?</div>
+        <div class="cfoot"><div class="cflag">Flag: <span>NCSA2026{file.exe}</span></div><span class="diff medium">Medium</span></div>
+      </div>
+    </div>
+
+    <div class="card i" data-cat="Incident Handling" data-kw="privilege escalation script mitre attack technique sudo suid cron">
+      <div class="cstripe"></div><div class="cbody">
+        <div class="ctop"><div class="ctitle">IH 4 — Privilege Escalation</div><div class="cpts">100</div></div>
+        <span class="ctag">Incident</span>
+        <div class="cdesc">Which <strong>script</strong> was abused for privilege escalation, and which <strong>MITRE ATT&amp;CK technique</strong> describes it?</div>
+        <div class="cfoot"><div class="cflag">Flag: <span>NCSA2026{script_T1000.005}</span></div><span class="diff medium">Medium</span></div>
+      </div>
+    </div>
+
+    <div class="card i" data-cat="Incident Handling" data-kw="persistent access backdoor file crontab scheduled task">
+      <div class="cstripe"></div><div class="cbody">
+        <div class="ctop"><div class="ctitle">IH 5 — Persistence File</div><div class="cpts">100</div></div>
+        <span class="ctag">Incident</span>
+        <div class="cdesc">Which <strong>file</strong> contains the attacker's persistent access mechanism?</div>
+        <div class="cfoot"><div class="cflag">Flag: <span>NCSA2026{/var/log/test}</span></div><span class="diff medium">Medium</span></div>
+      </div>
+    </div>
+
+    <div class="card i" data-cat="Incident Handling" data-kw="command execution payload bash reverse shell execution">
+      <div class="cstripe"></div><div class="cbody">
+        <div class="ctop"><div class="ctitle">IH 6 — Payload Commands</div><div class="cpts">100</div></div>
+        <span class="ctag">Incident</span>
+        <div class="cdesc">Which <strong>commands</strong> were used to execute the malicious payload on the target?</div>
+        <div class="cfoot"><div class="cflag">Flag: <span>NCSA2026{cmd1&amp;&amp;cmd2}</span></div><span class="diff medium">Medium</span></div>
+      </div>
+    </div>
+
+    <div class="card i" data-cat="Incident Handling" data-kw="archived sensitive data zip location directory exfiltration staging">
+      <div class="cstripe"></div><div class="cbody">
+        <div class="ctop"><div class="ctitle">IH 7 — Exfiltrated Archive</div><div class="cpts">100</div></div>
+        <span class="ctag">Incident</span>
+        <div class="cdesc">Find the <strong>full path of the archived sensitive data</strong> staged for exfiltration.</div>
+        <div class="cfoot"><div class="cflag">Flag: <span>NCSA2026{/var/dir/jack.zip}</span></div><span class="diff medium">Medium</span></div>
+      </div>
+    </div>
+
+    <div class="card i" data-cat="Incident Handling" data-kw="backdoor script persistent cache malware autorun startup">
+      <div class="cstripe"></div><div class="cbody">
+        <div class="ctop"><div class="ctitle">IH 8 — Backdoor Script</div><div class="cpts">100</div></div>
+        <span class="ctag">Incident</span>
+        <div class="cdesc">What <strong>script</strong> was used as a persistent backdoor on the compromised system?</div>
+        <div class="cfoot"><div class="cflag">Flag: <span>NCSA2026{cache.exe}</span></div><span class="diff hard">Hard</span></div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ══════════════ ICS ══════════════ -->
+<section class="cat-sec" data-cat="ICS">
+  <div class="cat-hdr">
+    <span class="cswatch" style="background:var(--c-ics)"></span>
+    <h2>ICS / OT Security</h2>
+    <span class="cbadge">4 challenges · 400 pts</span>
+  </div>
+  <div class="scenario" style="border-left-color:var(--c-ics)">
+    <h4>⚙ Scenario — Thermal Runaway</h4>
+    <p>A <strong>thermal runaway event</strong> caused a primary ICS PLC to physically melt. Analyze the captured OT network PCAP to reconstruct the attack sequence.</p>
+    <p><strong>Modbus temperature:</strong> 16-bit signed integer · Unit °C · Scaling factor 0.1</p>
+    <p style="background:rgba(255,140,66,.08);border:1px solid rgba(255,140,66,.2);border-radius:4px;padding:8px 12px;margin-top:8px;font-family:'IBM Plex Mono',monospace;font-size:12px;">Actual Temp (°C) = Register Value × 0.1</p>
+    <p>Artifact: <a class="al" href="https://drive.egovcloud.gov.bd/index.php/s/6qhcMVQNc3FPfFe" target="_blank">https://drive.egovcloud.gov.bd/index.php/s/6qhcMVQNc3FPfFe</a></p>
+  </div>
+  <div class="grid">
+
+    <div class="card ic" data-cat="ICS" data-kw="thermal runaway normal operating temperature plc modbus register ot">
+      <div class="cstripe"></div><div class="cbody">
+        <div class="ctop"><div class="ctitle">Thermal_Runaway — 1</div><div class="cpts">100</div></div>
+        <span class="ctag">ICS / OT</span>
+        <div class="cdesc">What is the <strong>normal operating temperature</strong> (°C) of the ICS PLC?</div>
+        <div class="cfoot"><div class="cflag">Flag: <span>NCSA2026{XX}</span></div><span class="diff easy">Easy</span></div>
+      </div>
+    </div>
+
+    <div class="card ic" data-cat="ICS" data-kw="pcap frame alert heat limit exceeded modbus plc ot">
+      <div class="cstripe"></div><div class="cbody">
+        <div class="ctop"><div class="ctitle">Thermal_Runaway — 2</div><div class="cpts">100</div></div>
+        <span class="ctag">ICS / OT</span>
+        <div class="cdesc">Which <strong>PCAP frame</strong> shows the PLC triggering an over-heat alert?</div>
+        <div class="cfoot"><div class="cflag">Flag: <span>NCSA2026{XXX}</span></div><span class="diff easy">Easy</span></div>
+      </div>
+    </div>
+
+    <div class="card ic" data-cat="ICS" data-kw="packet arrival time timestamp wireshark meltdown bangladesh standard time">
+      <div class="cstripe"></div><div class="cbody">
+        <div class="ctop"><div class="ctitle">Thermal_Runaway — 3</div><div class="cpts">100</div></div>
+        <span class="ctag">ICS / OT</span>
+        <div class="cdesc">What is the <strong>Wireshark arrival time</strong> of the packet that triggered the meltdown? (Bangladesh Standard Time, full precision)<br><em>e.g. NCSA2026{Dec 31, 2024 09:23:34.567890000}</em></div>
+        <div class="cfoot"><div class="cflag">Flag: <span>NCSA2026{MMM DD, YYYY …}</span></div><span class="diff medium">Medium</span></div>
+      </div>
+    </div>
+
+    <div class="card ic" data-cat="ICS" data-kw="threat actor apt group attribution sans article blog post ics ot">
+      <div class="cstripe"></div><div class="cbody">
+        <div class="ctop"><div class="ctitle">Thermal_Runaway — 4</div><div class="cpts">100</div></div>
+        <span class="ctag">ICS / OT</span>
+        <div class="cdesc">Identify the <strong>APT group</strong> responsible. A SANS analysis was published — provide the full URL of that article.</div>
+        <div class="cfoot"><div class="cflag">Flag: <span>NCSA2026{https://www.sans.org/…}</span></div><span class="diff hard">Hard</span></div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ══════════════ THREAT INTELLIGENCE ══════════════ -->
+<section class="cat-sec" data-cat="Threat Intelligence">
+  <div class="cat-hdr">
+    <span class="cswatch" style="background:var(--c-thr)"></span>
+    <h2>Threat Intelligence</h2>
+    <span class="cbadge">6 challenges · 600 pts</span>
+  </div>
+  <div class="scenario" style="border-left-color:var(--c-thr)">
+    <h4>🎯 Scenario</h4>
+    <p>You are a <strong>Tier-2 SOC analyst</strong> monitoring critical infrastructure in Bangladesh. Multiple low-confidence alerts fired simultaneously — suspicious encoded HTTP, irregular VPN auth, unusual DNS spikes, and known attack indicators. Combined, they suggest a <strong>coordinated intrusion</strong>.</p>
+    <p><strong>Artifacts:</strong> web_access.log · siem_events.json · dns_resolvers.csv · network_payload.txt · threat_intel.json</p>
+    <p>Artifact: <a class="al" href="https://drive.egovcloud.gov.bd/index.php/s/2nXv9hv1b891sDM" target="_blank">https://drive.egovcloud.gov.bd/index.php/s/2nXv9hv1b891sDM</a></p>
+  </div>
+  <div class="grid">
+
+    <div class="card t" data-cat="Threat Intelligence" data-kw="web exploit identification endpoint sha1 hash log real attack">
+      <div class="cstripe"></div><div class="cbody">
+        <div class="ctop"><div class="ctitle">Web Exploit Identification</div><div class="cpts">100</div></div>
+        <span class="ctag">Threat Intel</span>
+        <div class="cdesc">Identify the <strong>actual exploited endpoint</strong> (only one is real).<br><em>flag = SHA1(ip + endpoint + response_size)</em></div>
+        <div class="cfoot"><div class="cflag">Flag: <span>NCSA2026{hash_value}</span></div><span class="diff medium">Medium</span></div>
+      </div>
+    </div>
+
+    <div class="card t" data-cat="Threat Intelligence" data-kw="attacker identification ip low slow login sha1 siem">
+      <div class="cstripe"></div><div class="cbody">
+        <div class="ctop"><div class="ctitle">Attacker Identification</div><div class="cpts">100</div></div>
+        <span class="ctag">Threat Intel</span>
+        <div class="cdesc">Identify the <strong>external attacker's IP</strong> — uses low-and-slow login attempts blending with normal traffic.<br><em>flag = SHA1(ip + timestamp)</em></div>
+        <div class="cfoot"><div class="cflag">Flag: <span>NCSA2026{hash_value}</span></div><span class="diff medium">Medium</span></div>
+      </div>
+    </div>
+
+    <div class="card t" data-cat="Threat Intelligence" data-kw="payload deobfuscation base64 xor reverse hex decode chain obfuscation">
+      <div class="cstripe"></div><div class="cbody">
+        <div class="ctop"><div class="ctitle">Payload Deobfuscation</div><div class="cpts">100</div></div>
+        <span class="ctag">Threat Intel</span>
+        <div class="cdesc">Decode the hidden payload from <code>network_payload.txt</code>.<br><strong>Chain:</strong> Base64 → XOR → Reverse → Hex → Plaintext</div>
+        <div class="cfoot"><div class="cflag">Flag: <span>NCSA2026{decoded_text}</span></div><span class="diff medium">Medium</span></div>
+      </div>
+    </div>
+
+    <div class="card t" data-cat="Threat Intelligence" data-kw="infrastructure abuse dns amplification sha256 factor timestamp csv">
+      <div class="cstripe"></div><div class="cbody">
+        <div class="ctop"><div class="ctitle">Infrastructure Abuse</div><div class="cpts">100</div></div>
+        <span class="ctag">Threat Intel</span>
+        <div class="cdesc">Find the <strong>DNS server used for amplification</strong> (TCP noise present; highest response ≠ correct).<br><em>flag = SHA256(ip + factor + timestamp)</em></div>
+        <div class="cfoot"><div class="cflag">Flag: <span>NCSA2026{hash_value}</span></div><span class="diff hard">Hard</span></div>
+      </div>
+    </div>
+
+    <div class="card t" data-cat="Threat Intelligence" data-kw="correlation mitre attack technique id tactic threat intel json">
+      <div class="cstripe"></div><div class="cbody">
+        <div class="ctop"><div class="ctitle">Correlation</div><div class="cpts">100</div></div>
+        <span class="ctag">Threat Intel</span>
+        <div class="cdesc">Identify the <strong>MITRE ATT&amp;CK Technique ID</strong> linked to the attack. Source: <code>threat_intel.json</code></div>
+        <div class="cfoot"><div class="cflag">Flag: <span>NCSA2026{technique_id}</span></div><span class="diff medium">Medium</span></div>
+      </div>
+    </div>
+
+    <div class="card t" data-cat="Threat Intelligence" data-kw="final correlation sha256 combine attacker dns payload technique all">
+      <div class="cstripe"></div><div class="cbody">
+        <div class="ctop"><div class="ctitle">Final Correlation</div><div class="cpts">100</div></div>
+        <span class="ctag">Threat Intel</span>
+        <div class="cdesc">Combine all previous findings.<br><em>flag = SHA256(attacker_ip + decoded_payload + dns_ip + technique_id)</em></div>
+        <div class="cfoot"><div class="cflag">Flag: <span>NCSA2026{hash_value}</span></div><span class="diff hard">Hard</span></div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ══════════════ APT ══════════════ -->
+<section class="cat-sec" data-cat="APT">
+  <div class="cat-hdr">
+    <span class="cswatch" style="background:var(--c-apt)"></span>
+    <h2>APT — Advanced Persistent Threat</h2>
+    <span class="cbadge">6 challenges · 600 pts</span>
+  </div>
+  <div class="scenario" style="border-left-color:var(--c-apt)">
+    <h4>☠ Scenario — XYZCORP.bd Ransomware</h4>
+    <p><strong>XYZCORP.bd</strong> (Dhaka) lost its data center. Critical services were temporarily bridged to the internet via a repurposed <strong>IoT Gateway</strong> behind a NIDS. A ransomware group now claims they exfiltrated backup data. Analyze the NIDS PCAP to trace the breach.</p>
+    <p>Artifact: <a class="al" href="https://drive.egovcloud.gov.bd/index.php/s/FybzlXsKPzdl7g7" target="_blank">https://drive.egovcloud.gov.bd/index.php/s/FybzlXsKPzdl7g7</a></p>
+  </div>
+  <div class="grid">
+
+    <div class="card a" data-cat="APT" data-kw="cve iot gateway authentication bypass login vulnerability admin">
+      <div class="cstripe"></div><div class="cbody">
+        <div class="ctop"><div class="ctitle">APT 1 — Auth Bypass CVE</div><div class="cpts">100</div></div>
+        <span class="ctag">APT</span>
+        <div class="cdesc">Identify the <strong>CVE</strong> used to bypass authentication and gain admin access to the IoT gateway.</div>
+        <div class="cfoot"><div class="cflag">Flag: <span>NCSA2026{cve-XXXX-XXXXX}</span></div><span class="diff medium">Medium</span></div>
+      </div>
+    </div>
+
+    <div class="card a" data-cat="APT" data-kw="iot gateway admin plaintext password cipher decrypt pcap">
+      <div class="cstripe"></div><div class="cbody">
+        <div class="ctop"><div class="ctitle">APT 2 — Admin Password</div><div class="cpts">100</div></div>
+        <span class="ctag">APT</span>
+        <div class="cdesc">What is the <strong>plaintext admin password</strong> of the IoT gateway? Don't fail with the cipher.</div>
+        <div class="cfoot"><div class="cflag">Flag: <span>NCSA2026{flag}</span></div><span class="diff medium">Medium</span></div>
+      </div>
+    </div>
+
+    <div class="card a" data-cat="APT" data-kw="rce remote code execution cve iot gateway directory backdoor command injection">
+      <div class="cstripe"></div><div class="cbody">
+        <div class="ctop"><div class="ctitle">APT 3 — RCE CVE + Directory</div><div class="cpts">100</div></div>
+        <span class="ctag">APT</span>
+        <div class="cdesc">Identify the <strong>RCE CVE</strong> and the <strong>directory</strong> where the backdoor was executed on the gateway.</div>
+        <div class="cfoot"><div class="cflag">Flag: <span>NCSA2026{cve-XXXX-XXXXX, /dir}</span></div><span class="diff hard">Hard</span></div>
+      </div>
+    </div>
+
+    <div class="card a" data-cat="APT" data-kw="c2 beacon command control attribution apt group threat actor">
+      <div class="cstripe"></div><div class="cbody">
+        <div class="ctop"><div class="ctitle">APT 4 — Group Attribution</div><div class="cpts">100</div></div>
+        <span class="ctag">APT</span>
+        <div class="cdesc">The attacker dropped a <strong>C2 beacon</strong> for persistence. Based on its patterns, which <strong>APT group</strong> is responsible?</div>
+        <div class="cfoot"><div class="cflag">Flag: <span>NCSA2026{X-XXX-XX}</span></div><span class="diff hard">Hard</span></div>
+      </div>
+    </div>
+
+    <div class="card a" data-cat="APT" data-kw="backup server credentials plaintext captured username password credential dumping">
+      <div class="cstripe"></div><div class="cbody">
+        <div class="ctop"><div class="ctitle">APT 5 — Stolen Credentials</div><div class="cpts">100</div></div>
+        <span class="ctag">APT</span>
+        <div class="cdesc">The attacker captured <strong>backup server credentials in plaintext</strong>. Identify the compromised username and password.</div>
+        <div class="cfoot"><div class="cflag">Flag: <span>NCSA2026{Username:Password}</span></div><span class="diff hard">Hard</span></div>
+      </div>
+    </div>
+
+    <div class="card a" data-cat="APT" data-kw="steganography covert exfiltration stealthy technique hidden data">
+      <div class="cstripe"></div><div class="cbody">
+        <div class="ctop"><div class="ctitle">APT 6 — Covert Exfiltration</div><div class="cpts">100</div></div>
+        <span class="ctag">APT</span>
+        <div class="cdesc">The attacker used a <strong>stealthy exfiltration technique</strong>. Analyze the method and recover the hidden flag.</div>
+        <div class="cfoot"><div class="cflag">Flag: <span>NCSA2026{Th15_Cre@T3_THe_3nd}</span></div><span class="diff hard">Hard</span></div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ══════════════ OSINT ══════════════ -->
+<section class="cat-sec" data-cat="OSINT">
+  <div class="cat-hdr">
+    <span class="cswatch" style="background:var(--c-osi)"></span>
+    <h2>OSINT</h2>
+    <span class="cbadge">3 challenges · 300 pts</span>
+  </div>
+  <div class="grid">
+
+    <div class="card o" data-cat="OSINT" data-kw="airport headquarters location company geolocation nearest image">
+      <div class="cstripe"></div><div class="cbody">
+        <div class="ctop"><div class="ctitle">OSINT 1 — Nearest Airport</div><div class="cpts">100</div></div>
+        <span class="ctag">OSINT</span>
+        <div class="cdesc">Which <strong>airport</strong> is nearest to the company's headquarters?<br>📦 <a href="https://drive.egovcloud.gov.bd/index.php/s/PGzigC503Hlze3c" target="_blank">Artifact Download</a></div>
+        <div class="cfoot"><div class="cflag">Flag: <span>NCSA2026{flag}</span></div><span class="diff easy">Easy</span></div>
+      </div>
+    </div>
+
+    <div class="card o" data-cat="OSINT" data-kw="nikolas pup dog owner daddy father full name social media">
+      <div class="cstripe"></div><div class="cbody">
+        <div class="ctop"><div class="ctitle">OSINT 2 — Nikolas the Pup</div><div class="cpts">100</div></div>
+        <span class="ctag">OSINT</span>
+        <div class="cdesc">Who is <strong>Nikolas the pup</strong>? Find his daddy's <strong>full name</strong> — submit in lowercase with spaces as underscores.</div>
+        <div class="cfoot"><div class="cflag">Flag: <span>NCSA2026{first_last}</span></div><span class="diff medium">Medium</span></div>
+      </div>
+    </div>
+
+    <div class="card o" data-cat="OSINT" data-kw="historic literary street cafes author writer road name geolocation image">
+      <div class="cstripe"></div><div class="cbody">
+        <div class="ctop"><div class="ctitle">OSINT 3 — Literary Street</div><div class="cpts">100</div></div>
+        <span class="ctag">OSINT</span>
+        <div class="cdesc">A charming historic street lined with literary cafés and cultural plaques — named after a great <strong>author</strong>. Find out who.<br>📦 <a href="https://drive.egovcloud.gov.bd/index.php/s/NxNqQ9f0nTjay8p" target="_blank">Artifact Download</a></div>
+        <div class="cfoot"><div class="cflag">Flag: <span>NCSA2026{author_name}</span></div><span class="diff medium">Medium</span></div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+</main>
+
+<footer>
+  <p>© 2026 <a href="https://ncsa.gov.bd" target="_blank">National Cyber Security Agency (NCSA)</a> &nbsp;·&nbsp; Bangladesh &nbsp;·&nbsp; Drill 2026 CTF Archive</p>
+  <p>Flag format: NCSA2026{…} &nbsp;·&nbsp; All challenges archived post-event</p>
+</footer>
+
+<script>
+  const btns    = document.querySelectorAll('.fbtn');
+  const cards   = document.querySelectorAll('.card');
+  const secs    = document.querySelectorAll('.cat-sec');
+  const srch    = document.getElementById('srch');
+  const rc      = document.getElementById('rc');
+  const noRes   = document.getElementById('noRes');
+
+  function filter() {
+    const cat = document.querySelector('.fbtn.active').dataset.cat;
+    const q   = srch.value.toLowerCase().trim();
+    let n = 0;
+
+    cards.forEach(c => {
+      const ccat = c.dataset.cat;
+      const kw   = (c.dataset.kw || '') + ' ' + c.textContent.toLowerCase();
+      const show = (cat === 'all' || ccat === cat) && (!q || kw.includes(q));
+      c.classList.toggle('hidden', !show);
+      if (show) n++;
+    });
+
+    secs.forEach(s => {
+      const ok = (cat === 'all' || s.dataset.cat === cat) &&
+                 [...s.querySelectorAll('.card')].some(c => !c.classList.contains('hidden'));
+      s.classList.toggle('hidden', !ok);
+    });
+
+    rc.textContent = n + (n === 1 ? ' challenge' : ' challenges');
+    noRes.style.display = n === 0 ? 'block' : 'none';
+  }
+
+  btns.forEach(b => b.addEventListener('click', () => {
+    btns.forEach(x => x.classList.remove('active'));
+    b.classList.add('active');
+    filter();
+  }));
+
+  srch.addEventListener('input', filter);
+</script>
+</body>
+</html>
